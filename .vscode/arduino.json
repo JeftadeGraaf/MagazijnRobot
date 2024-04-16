@@ -1,7 +1,0 @@
-{
-    "sketch": "MagazijnRobot.ino",
-    "output": "build",
-    "board": "arduino:avr:uno",
-    "port": "COM4",
-    "programmer": "avrisp"
-}
