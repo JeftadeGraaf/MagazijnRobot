@@ -3,5 +3,6 @@
     "sketch": "MagazijnRobot.ino",
     "output": "build",
     "board": "arduino:avr:uno",
-    "port": "COM3"
+    "port": "COM4",
+    "programmer": "avrisp"
 }

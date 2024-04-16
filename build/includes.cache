@@ -13,5 +13,10 @@
     "Sourcefile": "C:\\Users\\mikes\\Desktop\\Windesheim\\Semester 2\\KBS\\MagazijnRobot\\build\\sketch\\MagazijnRobot.ino.cpp",
     "Include": "",
     "Includepath": null
+  },
+  {
+    "Sourcefile": "C:\\Users\\mikes\\Desktop\\Windesheim\\Semester 2\\KBS\\MagazijnRobot\\build\\sketch\\src\\JoystickModule\\Joystick.cpp",
+    "Include": "",
+    "Includepath": null
   }
 ]
