@@ -12,13 +12,12 @@ void Motor::registerPins(){
     pinMode(this->directionPin, OUTPUT);
 }
 void Motor:: setManualPower(int axisValue){
-    if(axisValue < 127){
-        axisValue = 127 - axisValue;
+    if(axisValue < 0){
         digitalWrite(directionPin, LOW);
-    } else {
-        axisValue = axisValue - 127;
-        digitalWrite(directionPin, HIGH);
-    }
+        digitalWrite(pwmPin, (axisValue * -1));
 
-    digitalWrite(pwmPin, axisValue);
+    } else {
+        digitalWrite(directionPin, HIGH);
+        digitalWrite(pwmPin, axisValue);
+    }
 }
