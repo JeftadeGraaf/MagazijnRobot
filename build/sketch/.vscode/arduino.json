@@ -1,0 +1,7 @@
+#line 1 "C:\\Users\\mikes\\Desktop\\Windesheim\\Semester 2\\KBS\\MagazijnRobot\\.vscode\\arduino.json"
+{
+    "sketch": "MagazijnRobot.ino",
+    "output": "build",
+    "board": "arduino:avr:uno",
+    "port": "COM3"
+}
