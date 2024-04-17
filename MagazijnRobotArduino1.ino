@@ -49,6 +49,7 @@ void loop()
         case off:
             if(previousState != off){
                 previousState = off;
+                x_axisMotor.setManualPower(0);
                 sendMessage(9, "off");
             }
             break;
