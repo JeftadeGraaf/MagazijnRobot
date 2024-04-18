@@ -3,10 +3,16 @@
 #include "Src/MotorModule/Motor.h"
 #include <Wire.h>
 
+#define emergencyButtonPin 2
+#define resetButtonPin 10
+
 Joystick joystick = Joystick(A2, A3, 30);
 Motor x_axisMotor = Motor(3, 12);
 Motor y_axisMotor = Motor(11, 13);
-int emergencyButtonPin = 2;
+
+bool resetButtonWasPressed = false;
+int debounceTime = 200;
+unsigned long resetButtonTimer = 0;
 
 
 enum RobotState{
@@ -34,23 +40,19 @@ void loop()
 {
     switch (currentState){
         case automatic:
-            if(previousState != automatic){
-                previousState = automatic;
-                sendMessage(9, "aut");
+            if(isResetButtonPressed()){
+                switchToManualState();
             }
             break;
         case manual:
-            if(previousState != manual){
-                previousState = manual;
-                sendMessage(9, "man");
-            }
             handleManualInput();
+            if(isResetButtonPressed()){
+                switchToAutomaticState();
+            }
             break;
         case off:
-            if(previousState != off){
-                previousState = off;
-                x_axisMotor.setManualPower(0);
-                sendMessage(9, "off");
+            if(isResetButtonPressed()){
+                switchToManualState();
             }
             break;
         default:
@@ -61,15 +63,46 @@ void loop()
 
 void turnOffRobot(){
     currentState = off;
+    x_axisMotor.setManualPower(0);
+    y_axisMotor.setManualPower(0);
+    sendMessage(9, "off");
+}
+
+void switchToManualState(){
+    currentState = manual;
+    sendMessage(9, "man");
+}
+
+void switchToAutomaticState(){
+    currentState = automatic;
+    sendMessage(9, "aut");
 }
 
 void handleManualInput(){
     int xValue = joystick.readXAxis();
     x_axisMotor.setManualPower(xValue);
+    int yValue = joystick.readYAxis();
+    y_axisMotor.setManualPower(yValue);
 }
 
 void sendMessage(int address, String msg){
     Wire.beginTransmission(address);
     Wire.write(msg.c_str());
     Wire.endTransmission();
+}
+
+
+bool isResetButtonPressed(){
+  if(digitalRead()){
+    if(!resetButtonWasPressed){
+    	if(millis() - resetButtonTimer >= debounceTime){
+    	  resetButtonWasPressed = true;	
+          return true;
+    	}
+    }  
+  } else {
+    resetButtonTimer = millis();
+    resetButtonWasPressed = false;
+  }
+  return false;
 }
