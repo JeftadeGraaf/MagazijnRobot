@@ -3,16 +3,19 @@
 #include "Src/MotorModule/Motor.h"
 #include <Wire.h>
 
-#define emergencyButtonPin 2
+#define emergencyButtonPin 4
 #define resetButtonPin 10
 
-Joystick joystick = Joystick(A2, A3, 30);
-Motor x_axisMotor = Motor(3, 12);
-Motor y_axisMotor = Motor(11, 13);
+Joystick joystick = Joystick(A3, A2, 30);
+Motor x_axisMotor = Motor(3, 12, 8);
+Motor y_axisMotor = Motor(11, 13, 9);
 
 bool resetButtonWasPressed = false;
+bool emergencyButtonWasPressed = false;
+
 int debounceTime = 200;
 unsigned long resetButtonTimer = 0;
+unsigned long emergencyButtonTimer = 0;
 
 
 enum RobotState{
@@ -22,14 +25,12 @@ enum RobotState{
 };
 
 RobotState currentState = manual;
-RobotState previousState = off;
 
 void setup()
 {
     pinMode(emergencyButtonPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(emergencyButtonPin), turnOffRobot, FALLING);
+    pinMode(resetButtonPin, INPUT_PULLUP);
     Wire.begin();
-
     Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
@@ -38,6 +39,9 @@ void setup()
 
 void loop()
 {
+    if(isEmergencyButtonPressed()){
+        turnOffRobot();
+    }
     switch (currentState){
         case automatic:
             if(isResetButtonPressed()){
@@ -47,7 +51,7 @@ void loop()
         case manual:
             handleManualInput();
             if(isResetButtonPressed()){
-                switchToAutomaticState();
+                turnOffRobot();
             }
             break;
         case off:
@@ -93,7 +97,7 @@ void sendMessage(int address, String msg){
 
 
 bool isResetButtonPressed(){
-  if(digitalRead()){
+  if(digitalRead(resetButtonPin) == LOW){
     if(!resetButtonWasPressed){
     	if(millis() - resetButtonTimer >= debounceTime){
     	  resetButtonWasPressed = true;	
@@ -103,6 +107,21 @@ bool isResetButtonPressed(){
   } else {
     resetButtonTimer = millis();
     resetButtonWasPressed = false;
+  }
+  return false;
+}
+
+bool isEmergencyButtonPressed(){
+  if(digitalRead(emergencyButtonPin) == LOW){
+    if(!emergencyButtonWasPressed){
+    	if(millis() - emergencyButtonTimer >= debounceTime){
+    	  emergencyButtonWasPressed = true;	
+          return true;
+    	}
+    }  
+  } else {
+    emergencyButtonTimer = millis();
+    emergencyButtonWasPressed = false;
   }
   return false;
 }

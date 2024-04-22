@@ -5,13 +5,14 @@ class Motor
 {
 
 public:
-    Motor(int pwmPin, int directionPin);
+    Motor(int pwmPin, int directionPin, int brakePin);
     void registerPins();
     void setManualPower(int axisValue);
     
 private:
     int pwmPin;
     int directionPin;
+    int brakePin;
 };
 
 
