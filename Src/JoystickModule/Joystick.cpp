@@ -22,7 +22,7 @@ int Joystick::readXAxis(){
     } else {
         xValue = map(xValue, 127, 255, 0, 127);
     }
-    return xValue;
+    return xValue * -1;
 }
 
 int Joystick::readYAxis(){
