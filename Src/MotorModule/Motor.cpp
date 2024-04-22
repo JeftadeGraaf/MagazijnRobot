@@ -3,10 +3,11 @@
 
 
 
-Motor::Motor(int pwmPin, int directionPin, int brakePin){
+Motor::Motor(int pwmPin, int directionPin, int brakePin, int currentSensingPin){
     this-> pwmPin = pwmPin;
     this-> directionPin = directionPin;
     this-> brakePin = brakePin;
+    this-> currentSensingPin = currentSensingPin;
 }
 void Motor::registerPins(){
     pinMode(this->pwmPin, OUTPUT);

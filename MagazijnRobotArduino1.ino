@@ -7,8 +7,8 @@
 #define resetButtonPin 10
 
 Joystick joystick = Joystick(A3, A2, 30);
-Motor x_axisMotor = Motor(3, 12, 8);
-Motor y_axisMotor = Motor(11, 13, 9);
+Motor x_axisMotor = Motor(3, 12, 8, A0);
+Motor y_axisMotor = Motor(11, 13, 9, A1);
 
 bool resetButtonWasPressed = false;
 bool emergencyButtonWasPressed = false;
