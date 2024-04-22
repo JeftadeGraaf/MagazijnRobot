@@ -93,9 +93,14 @@ void switchToAutomaticState(){
 
 void handleManualInput(){
     int xValue = joystick.readXAxis();
+    
+
+    
     if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
         x_axisMotor.setManualPower(xValue);
-    } 
+    } else {
+        x_axisMotor.setManualPower(0);
+    }
     int yValue = joystick.readYAxis();
     y_axisMotor.setManualPower(yValue);
 }
