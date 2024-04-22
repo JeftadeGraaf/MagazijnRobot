@@ -5,6 +5,11 @@
 
 #define emergencyButtonPin 4
 #define resetButtonPin 10
+const int lInductiveSensor = 6;
+const int rInductiveSensor = 7;
+bool lInduction = true;
+bool rInduction = true;
+
 
 Joystick joystick = Joystick(A3, A2, 30);
 Motor x_axisMotor = Motor(3, 12, 8, A0);
@@ -30,6 +35,8 @@ void setup()
 {
     pinMode(emergencyButtonPin, INPUT_PULLUP);
     pinMode(resetButtonPin, INPUT_PULLUP);
+    pinMode(6, INPUT);
+    pinMode(7, INPUT);
     Wire.begin();
     Serial.begin(9600);
     joystick.registerPins();
@@ -39,6 +46,8 @@ void setup()
 
 void loop()
 {
+    lInduction = digitalRead(lInductiveSensor);
+    rInduction = digitalRead(rInductiveSensor);
     if(isEmergencyButtonPressed()){
         turnOffRobot();
     }
@@ -84,7 +93,9 @@ void switchToAutomaticState(){
 
 void handleManualInput(){
     int xValue = joystick.readXAxis();
-    x_axisMotor.setManualPower(xValue);
+    if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
+        x_axisMotor.setManualPower(xValue);
+    } 
     int yValue = joystick.readYAxis();
     y_axisMotor.setManualPower(yValue);
 }
