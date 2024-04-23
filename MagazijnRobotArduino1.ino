@@ -47,9 +47,6 @@ void setup()
 
 void loop()
 {
-    lInduction = digitalRead(lInductiveSensor);
-    rInduction = digitalRead(rInductiveSensor);
-
     if(isEmergencyButtonPressed()){
         turnOffRobot();
     } else {
@@ -111,6 +108,9 @@ void switchToAutomaticState(){
 }
 
 void handleManualInput(){
+    lInduction = digitalRead(lInductiveSensor);
+    rInduction = digitalRead(rInductiveSensor);
+    
     int xValue = joystick.readXAxis();
     if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
         x_axisMotor.setManualPower(xValue);
