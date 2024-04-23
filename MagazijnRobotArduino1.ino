@@ -9,6 +9,7 @@ const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
+String msg = "";
 
 
 Joystick joystick = Joystick(A3, A2, 30);
@@ -35,8 +36,8 @@ void setup()
 {
     pinMode(emergencyButtonPin, INPUT_PULLUP);
     pinMode(resetButtonPin, INPUT_PULLUP);
-    pinMode(6, INPUT);
-    pinMode(7, INPUT);
+    pinMode(lInductiveSensor, INPUT);
+    pinMode(rInductiveSensor, INPUT);
     Wire.begin();
     Serial.begin(9600);
     joystick.registerPins();
@@ -46,6 +47,15 @@ void setup()
 
 void loop()
 {
+
+    Wire.requestFrom(9,3);
+    while(Wire.available()){
+      char x = Wire.read(); 
+      msg += x;
+    }
+    if(msg == "off"){
+        turnOffRobot();
+    }
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
     if(isEmergencyButtonPressed()){
@@ -93,9 +103,6 @@ void switchToAutomaticState(){
 
 void handleManualInput(){
     int xValue = joystick.readXAxis();
-    
-
-    
     if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
         x_axisMotor.setManualPower(xValue);
     } else {
