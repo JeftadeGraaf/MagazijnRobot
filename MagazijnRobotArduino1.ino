@@ -40,7 +40,7 @@ void setup()
     pinMode(6, INPUT);
     pinMode(7, INPUT);
     Wire.begin();
-    // Serial.begin(9600);
+    Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();

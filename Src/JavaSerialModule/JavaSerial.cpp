@@ -8,12 +8,8 @@ JavaSerial::JavaSerial(){
 
 void JavaSerial::readSerial(){
     if (Serial.available() > 0) {
-        String inputString = "";
+        String inputString = Serial.readString();
 
-        while(Serial.available() > 0) {
-            inputString += Serial.read();
-        }
-
-        Serial.println(inputString);
+        Serial.println(inputString + "\n");
     }
 };
