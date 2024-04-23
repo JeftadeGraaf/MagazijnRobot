@@ -6,12 +6,14 @@ JavaSerial::JavaSerial(){
     Serial.begin(9600);    
 }
 
-void JavaSerial::readSerial(){
+String JavaSerial::readSerial(){
+    String inputString = "";
     if (Serial.available() > 0) {
-        String inputString = Serial.readString();
+        inputString = Serial.readString();
 
         Serial.println(inputString + "\n");
     }
+    return inputString;
 };
 
 void JavaSerial::writeSerial(String message){

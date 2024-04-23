@@ -7,7 +7,7 @@ class JavaSerial
 public:
 
     JavaSerial();
-    void readSerial();
+    String readSerial();
     void writeSerial(String message);
 };
 #endif

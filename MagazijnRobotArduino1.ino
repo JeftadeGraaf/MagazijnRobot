@@ -54,7 +54,18 @@ void loop()
         turnOffRobot();
     }
     
-    serialModule.readSerial();
+    String msg = serialModule.readSerial();
+    char typeMsg = msg[0];
+    if(typeMsg == 'n'){
+        serialModule.writeSerial("bn");
+        turnOffRobot();
+    } else if(typeMsg == 'o'){
+        //logic for order
+    }
+    //location sending
+    //serialModule.writeSerial("l123,123");
+
+
 
     switch (currentState){
         case automatic:
@@ -84,16 +95,28 @@ void turnOffRobot(){
     x_axisMotor.setManualPower(0);
     y_axisMotor.setManualPower(0);
     sendMessage(9, "off");
+    serialModule.writeSerial("sr");
+    while(serialModule.readSerial() != "bs"){
+        serialModule.writeSerial("sr");
+    }
 }
 
 void switchToManualState(){
     currentState = manual;
     sendMessage(9, "man");
+    serialModule.writeSerial("so");
+    while(serialModule.readSerial() != "bs"){
+        serialModule.writeSerial("so");
+    }
 }
 
 void switchToAutomaticState(){
     currentState = automatic;
     sendMessage(9, "aut");
+    serialModule.writeSerial("sg");
+    while(serialModule.readSerial() != "bs"){
+        serialModule.writeSerial("sg");
+    }
 }
 
 void handleManualInput(){
@@ -136,7 +159,11 @@ bool isEmergencyButtonPressed(){
   if(digitalRead(emergencyButtonPin) == LOW){
     if(!emergencyButtonWasPressed){
     	if(millis() - emergencyButtonTimer >= debounceTime){
-    	  emergencyButtonWasPressed = true;	
+            emergencyButtonWasPressed = true;
+            serialModule.writeSerial("n");
+            while(serialModule.readSerial() != "bn"){
+                serialModule.writeSerial("n");
+            }
           return true;
     	}
     }  
