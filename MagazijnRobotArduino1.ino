@@ -5,22 +5,23 @@
 
 #define emergencyButtonPin 4
 #define resetButtonPin 10
+#define secondArduinoAddress 9
 const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
+String msg = "";
 
 
-Joystick joystick = Joystick(A3, A2, 30);
-Motor x_axisMotor = Motor(3, 12, 8, A0);
-Motor y_axisMotor = Motor(11, 13, 9, A1);
+Joystick joystick = Joystick(A3, A2, 30); //parameters: xAxis, yAxis, deadZone
+Motor x_axisMotor = Motor(3, 12, 8, A0); //parameters: pwmPin, directionPin, brakePin, currentSensingPin
+Motor y_axisMotor = Motor(11, 13, 9, A1); //parameters: pwmPin, directionPin, brakePin, currentSensingPin
 
 bool resetButtonWasPressed = false;
 bool emergencyButtonWasPressed = false;
 
 int debounceTime = 200;
 unsigned long resetButtonTimer = 0;
-unsigned long emergencyButtonTimer = 0;
 
 
 enum RobotState{
@@ -35,8 +36,8 @@ void setup()
 {
     pinMode(emergencyButtonPin, INPUT_PULLUP);
     pinMode(resetButtonPin, INPUT_PULLUP);
-    pinMode(6, INPUT);
-    pinMode(7, INPUT);
+    pinMode(lInductiveSensor, INPUT);
+    pinMode(rInductiveSensor, INPUT);
     Wire.begin();
     Serial.begin(9600);
     joystick.registerPins();
@@ -48,9 +49,16 @@ void loop()
 {
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
+
     if(isEmergencyButtonPressed()){
         turnOffRobot();
+    } else {
+        handleRobotState();
+        handleIncomingMessages();
     }
+}
+
+void handleRobotState(){
     switch (currentState){
         case automatic:
             if(isResetButtonPressed()){
@@ -74,28 +82,36 @@ void loop()
     }
 }
 
+void handleIncomingMessages(){
+    Wire.requestFrom(secondArduinoAddress,3);
+    while(Wire.available()){
+      char x = Wire.read(); 
+      msg += x;
+    }
+    if(msg == "off"){
+        turnOffRobot();
+    }
+}
+
 void turnOffRobot(){
     currentState = off;
     x_axisMotor.setManualPower(0);
     y_axisMotor.setManualPower(0);
-    sendMessage(9, "off");
+    sendMessage(secondArduinoAddress, "off");
 }
 
 void switchToManualState(){
     currentState = manual;
-    sendMessage(9, "man");
+    sendMessage(secondArduinoAddress, "man");
 }
 
 void switchToAutomaticState(){
     currentState = automatic;
-    sendMessage(9, "aut");
+    sendMessage(secondArduinoAddress, "aut");
 }
 
 void handleManualInput(){
     int xValue = joystick.readXAxis();
-    
-
-    
     if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
         x_axisMotor.setManualPower(xValue);
     } else {
@@ -128,16 +144,5 @@ bool isResetButtonPressed(){
 }
 
 bool isEmergencyButtonPressed(){
-  if(digitalRead(emergencyButtonPin) == LOW){
-    if(!emergencyButtonWasPressed){
-    	if(millis() - emergencyButtonTimer >= debounceTime){
-    	  emergencyButtonWasPressed = true;	
-          return true;
-    	}
-    }  
-  } else {
-    emergencyButtonTimer = millis();
-    emergencyButtonWasPressed = false;
-  }
-  return false;
+    return digitalRead(emergencyButtonPin) == LOW;
 }
