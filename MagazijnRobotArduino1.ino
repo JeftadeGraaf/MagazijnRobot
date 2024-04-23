@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Src/JoystickModule/Joystick.h"
 #include "Src/MotorModule/Motor.h"
+#include "Src/JavaSerialModule/JavaSerial.h"
 #include <Wire.h>
 
 #define emergencyButtonPin 4
@@ -14,6 +15,7 @@ bool rInduction = true;
 Joystick joystick = Joystick(A3, A2, 30);
 Motor x_axisMotor = Motor(3, 12, 8, A0);
 Motor y_axisMotor = Motor(11, 13, 9, A1);
+JavaSerial serialModule = JavaSerial();
 
 bool resetButtonWasPressed = false;
 bool emergencyButtonWasPressed = false;
@@ -38,7 +40,7 @@ void setup()
     pinMode(6, INPUT);
     pinMode(7, INPUT);
     Wire.begin();
-    Serial.begin(9600);
+    // Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();
@@ -51,6 +53,9 @@ void loop()
     if(isEmergencyButtonPressed()){
         turnOffRobot();
     }
+    
+    serialModule.readSerial();
+
     switch (currentState){
         case automatic:
             if(isResetButtonPressed()){
