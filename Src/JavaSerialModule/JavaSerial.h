@@ -8,6 +8,6 @@ public:
 
     JavaSerial();
     void readSerial();
-
+    void writeSerial(String message);
 };
 #endif

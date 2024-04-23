@@ -13,3 +13,7 @@ void JavaSerial::readSerial(){
         Serial.println(inputString + "\n");
     }
 };
+
+void JavaSerial::writeSerial(String message){
+    Serial.println(message);
+};
