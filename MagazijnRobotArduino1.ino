@@ -11,6 +11,7 @@ const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
+bool isZAxisOut;
 String msg = "";
 
 WireComm wireComm = WireComm(arduinoAddress, secondArduinoAddress);
@@ -56,12 +57,17 @@ void loop()
         handleRobotState();
     }
     if(wireComm.hasReceivedData()){
-        if(wireComm.getReceivedData() == "off"){
+        String msg = wireComm.getReceivedData();
+        if(msg == "off"){
             turnOffRobot();
-        } else if (wireComm.getReceivedData() == "man"){
+        } else if (msg == "man"){
             switchToManualState();
-        } else if (wireComm.getReceivedData() == "aut"){
+        } else if (msg == "aut"){
             switchToAutomaticState();
+        } else if (msg == "mz0"){
+            isZAxisOut = false;
+        } else if (msg == "mz1"){
+            isZAxisOut = true;
         }
     }
 }
@@ -110,15 +116,16 @@ void switchToAutomaticState(){
 void handleManualInput(){
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
-    
-    int xValue = joystick.readXAxis();
-    if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
-        x_axisMotor.setManualPower(xValue);
-    } else {
-        x_axisMotor.setManualPower(0);
-    }
-    int yValue = joystick.readYAxis();
-    y_axisMotor.setManualPower(yValue);
+    if(!isZAxisOut){
+        int xValue = joystick.readXAxis();
+        if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
+            x_axisMotor.setManualPower(xValue);
+        } else {
+            x_axisMotor.setManualPower(0);
+        }
+        int yValue = joystick.readYAxis();
+        y_axisMotor.setManualPower(yValue);
+    }    
 }
 
 bool isResetButtonPressed(){
