@@ -1,16 +1,19 @@
 #include <Arduino.h>
 #include "Src/JoystickModule/Joystick.h"
 #include "Src/MotorModule/Motor.h"
-#include <Wire.h>
+#include "Src/WireCommModule/WireComm.h"
 
 #define emergencyButtonPin 4
 #define resetButtonPin 10
+#define arduinoAddress 8
 #define secondArduinoAddress 9
 const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
 String msg = "";
+
+WireComm wireComm = WireComm(arduinoAddress, secondArduinoAddress);
 
 
 Joystick joystick = Joystick(A3, A2, 30); //parameters: xAxis, yAxis, deadZone
@@ -38,7 +41,6 @@ void setup()
     pinMode(resetButtonPin, INPUT_PULLUP);
     pinMode(lInductiveSensor, INPUT);
     pinMode(rInductiveSensor, INPUT);
-    Wire.begin();
     Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
@@ -48,10 +50,19 @@ void setup()
 void loop()
 {
     if(isEmergencyButtonPressed()){
+        Serial.println("Emergency");
         turnOffRobot();
     } else {
         handleRobotState();
-        handleIncomingMessages();
+    }
+    if(wireComm.hasReceivedData()){
+        if(wireComm.getReceivedData() == "off"){
+            turnOffRobot();
+        } else if (wireComm.getReceivedData() == "man"){
+            switchToManualState();
+        } else if (wireComm.getReceivedData() == "aut"){
+            switchToAutomaticState();
+        }
     }
 }
 
@@ -79,32 +90,21 @@ void handleRobotState(){
     }
 }
 
-void handleIncomingMessages(){
-    Wire.requestFrom(secondArduinoAddress,3);
-    while(Wire.available()){
-      char x = Wire.read(); 
-      msg += x;
-    }
-    if(msg == "off"){
-        turnOffRobot();
-    }
-}
-
 void turnOffRobot(){
     currentState = off;
     x_axisMotor.setManualPower(0);
     y_axisMotor.setManualPower(0);
-    sendMessage(secondArduinoAddress, "off");
+    wireComm.sendData("off");
 }
 
 void switchToManualState(){
     currentState = manual;
-    sendMessage(secondArduinoAddress, "man");
+    wireComm.sendData("man");
 }
 
 void switchToAutomaticState(){
     currentState = automatic;
-    sendMessage(secondArduinoAddress, "aut");
+    wireComm.sendData("aut");
 }
 
 void handleManualInput(){
@@ -120,13 +120,6 @@ void handleManualInput(){
     int yValue = joystick.readYAxis();
     y_axisMotor.setManualPower(yValue);
 }
-
-void sendMessage(int address, String msg){
-    Wire.beginTransmission(address);
-    Wire.write(msg.c_str());
-    Wire.endTransmission();
-}
-
 
 bool isResetButtonPressed(){
   if(digitalRead(resetButtonPin) == LOW){
