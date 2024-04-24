@@ -34,7 +34,7 @@ enum RobotState{
     off
 };
 
-RobotState currentState = manual;
+RobotState currentState;
 
 void setup()
 {
@@ -46,18 +46,19 @@ void setup()
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();
+    initialiseState();
 }
 
 void loop()
 {
     if(isEmergencyButtonPressed()){
-        Serial.println("Emergency");
         turnOffRobot();
     } else {
         handleRobotState();
     }
     if(wireComm.hasReceivedData()){
         String msg = wireComm.getReceivedData();
+        Serial.println(msg);
         if(msg == "off"){
             turnOffRobot();
         } else if (msg == "man"){
@@ -96,6 +97,11 @@ void handleRobotState(){
     }
 }
 
+void initialiseState(){
+    currentState = off;
+    wireComm.sendData("off");
+}
+
 void turnOffRobot(){
     currentState = off;
     x_axisMotor.setManualPower(0);
@@ -125,14 +131,17 @@ void handleManualInput(){
         }
         int yValue = joystick.readYAxis();
         y_axisMotor.setManualPower(yValue);
-    }    
+    } else {
+        x_axisMotor.setManualPower(0);
+        y_axisMotor.setManualPower(0);
+    }
 }
 
 bool isResetButtonPressed(){
   if(digitalRead(resetButtonPin) == LOW){
     if(!resetButtonWasPressed){
     	if(millis() - resetButtonTimer >= debounceTime){
-    	  resetButtonWasPressed = true;	
+    	  resetButtonWasPressed = true;
           return true;
     	}
     }  
