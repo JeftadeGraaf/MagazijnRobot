@@ -35,3 +35,7 @@ bool WireComm::hasReceivedData(){
 String WireComm::getReceivedData(){
   return data;
 }
+
+void WireComm::setHasReceivedData(bool value){
+  dataReceived = value;
+}

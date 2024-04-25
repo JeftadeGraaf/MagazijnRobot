@@ -16,6 +16,7 @@ class WireComm {
     static void receiveEvent(int bytes);
     bool hasReceivedData();
     String getReceivedData();
+    void setHasReceivedData(bool value);
 };
 
 #endif

@@ -70,6 +70,7 @@ void loop()
         } else if (msg == "mz1"){
             isZAxisOut = true;
         }
+        wireComm.setHasReceivedData(false);
     }
 }
 
