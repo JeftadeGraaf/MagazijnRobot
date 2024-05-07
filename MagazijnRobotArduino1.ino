@@ -99,6 +99,7 @@ void handleRobotState(){
         case off:
             if(isResetButtonPressed()){
                 switchToManualState();
+                lastComCheckTime = millis();
             }
             break;
         default:
