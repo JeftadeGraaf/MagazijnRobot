@@ -74,11 +74,10 @@ void loop()
         }
         wireComm.setHasReceivedData(false);
     }
-    if (millis() - lastComCheckTime >= 1000 && millis() - lastComCheckTime <= 2000) {
+    if (millis() - lastComCheckTime >= 500 && millis() - lastComCheckTime <= 1000) {
         Wire.requestFrom(9, 1);
         i2cCheck();
-    } else if (millis() - lastComCheckTime > 2000 ) {
-        Serial.println("No communication");
+    } else if (millis() - lastComCheckTime > 1000 ) {
         turnOffRobot();
     }
 }
