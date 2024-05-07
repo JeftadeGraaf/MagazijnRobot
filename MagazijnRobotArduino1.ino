@@ -26,6 +26,7 @@ bool emergencyButtonWasPressed = false;
 
 int debounceTime = 200;
 unsigned long resetButtonTimer = 0;
+unsigned long lastComCheckTime = 0;
 
 
 enum RobotState{
@@ -46,6 +47,7 @@ void setup()
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();
+    lastComCheckTime = millis();
     initialiseState();
 }
 
@@ -72,6 +74,13 @@ void loop()
         }
         wireComm.setHasReceivedData(false);
     }
+    if (millis() - lastComCheckTime >= 1000 && millis() - lastComCheckTime <= 2000) {
+        Wire.requestFrom(9, 1);
+        i2cCheck();
+    } else if (millis() - lastComCheckTime > 2000 ) {
+        Serial.println("No communication");
+        turnOffRobot();
+    }
 }
 
 void handleRobotState(){
@@ -90,6 +99,7 @@ void handleRobotState(){
         case off:
             if(isResetButtonPressed()){
                 switchToManualState();
+                lastComCheckTime = millis();
             }
             break;
         default:
@@ -155,4 +165,13 @@ bool isResetButtonPressed(){
 
 bool isEmergencyButtonPressed(){
     return digitalRead(emergencyButtonPin) == LOW;
+}
+
+void i2cCheck() {
+    if (Wire.available() > 0) {
+        char c = Wire.read();
+        if (c == 'u') {
+            lastComCheckTime = millis();
+        }
+    }
 }
