@@ -2,20 +2,26 @@
 #include "Src/JoystickModule/Joystick.h"
 #include "Src/MotorModule/Motor.h"
 #include "Src/WireCommModule/WireComm.h"
+#include "Src/JavaSerialModule/JavaSerial.h"
 
 #define emergencyButtonPin 4
 #define resetButtonPin 10
 #define arduinoAddress 8
 #define secondArduinoAddress 9
+#define rotatyPinXa 2
+#define rotatyPinXb 5
 const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
-bool isZAxisOut;
+bool tYSwitch = false;
+bool bYSwitch = false;
+bool isZAxisOut = true;
+bool callibrate = true;
 String msg = "";
 
 WireComm wireComm = WireComm(arduinoAddress, secondArduinoAddress);
-
+JavaSerial javaSerial = JavaSerial();
 
 Joystick joystick = Joystick(A3, A2, 30); //parameters: xAxis, yAxis, deadZone
 Motor x_axisMotor = Motor(3, 12, 8, A0); //parameters: pwmPin, directionPin, brakePin, currentSensingPin
@@ -24,15 +30,22 @@ Motor y_axisMotor = Motor(11, 13, 9, A1); //parameters: pwmPin, directionPin, br
 bool resetButtonWasPressed = false;
 bool emergencyButtonWasPressed = false;
 
+const int xPositions[5] = {1500, 2225, 2950, 3660, 4330};
+const int yPositions[5] = {60, 560, 1060, 1560, 2060};
+
 int debounceTime = 200;
 unsigned long resetButtonTimer = 0;
 unsigned long lastComCheckTime = 0;
+unsigned long lastPossitionUpdate = 0;
 
+int possitionX = 0;
+int possitionY = 0;
 
 enum RobotState{
     automatic,
     manual,
-    off
+    off,
+    callibrating
 };
 
 RobotState currentState;
@@ -43,6 +56,9 @@ void setup()
     pinMode(resetButtonPin, INPUT_PULLUP);
     pinMode(lInductiveSensor, INPUT);
     pinMode(rInductiveSensor, INPUT);
+    pinMode(rotatyPinXa, INPUT_PULLUP);
+    pinMode(rotatyPinXb, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(rotatyPinXa), readRotarty, RISING);
     Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
@@ -58,9 +74,15 @@ void loop()
     } else {
         handleRobotState();
     }
+
+    if(millis() - lastPossitionUpdate >= 100 && currentState != callibrating) {
+        javaSerial.writeSerial("l"+String(possitionX)+","+String(possitionY));
+        lastPossitionUpdate = millis();
+    }
+
     if(wireComm.hasReceivedData()){
         String msg = wireComm.getReceivedData();
-        Serial.println(msg);
+        // Serial.println(msg);
         if(msg == "off"){
             turnOffRobot();
         } else if (msg == "man"){
@@ -71,6 +93,19 @@ void loop()
             isZAxisOut = false;
         } else if (msg == "mz1"){
             isZAxisOut = true;
+        } else if(msg == "my0h") {
+            tYSwitch = false;
+        } else if(msg == "my1h") {
+            tYSwitch = true;
+        } else if(msg == "my0l") {
+            Serial.println(msg);
+            bYSwitch = false;
+        } else if(msg == "my1l") {
+            Serial.println(msg);
+            bYSwitch = true;
+        } else if(msg.startsWith("py")) {
+            // Serial.println(msg.substring(2));
+            possitionY = msg.substring(2).toInt();
         }
         wireComm.setHasReceivedData(false);
     }
@@ -86,7 +121,7 @@ void handleRobotState(){
     switch (currentState){
         case automatic:
             if(isResetButtonPressed()){
-                switchToManualState();
+                switchToCallibration();
             }
             break;
         case manual:
@@ -97,9 +132,12 @@ void handleRobotState(){
             break;
         case off:
             if(isResetButtonPressed()){
-                switchToManualState();
+                switchToCallibration();
                 lastComCheckTime = millis();
             }
+            break;
+        case callibrating:
+            callibrateMotor();
             break;
         default:
             currentState = off;
@@ -129,9 +167,18 @@ void switchToAutomaticState(){
     wireComm.sendData("aut");
 }
 
+void switchToCallibration(){
+    currentState = callibrating;
+    wireComm.sendData("cal");
+}
+
 void handleManualInput(){
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
+    if (!rInduction) {
+        possitionX = 0;
+    }
+    
     if(!isZAxisOut){
         int xValue = joystick.readXAxis();
         if((xValue < 0 && lInduction) || (xValue > 0 && rInduction) || xValue == 0){
@@ -140,7 +187,11 @@ void handleManualInput(){
             x_axisMotor.setManualPower(0);
         }
         int yValue = joystick.readYAxis();
-        y_axisMotor.setManualPower(yValue);
+        if((yValue < 0 && !tYSwitch) || (yValue > 0 && !bYSwitch) || yValue == 0){
+            y_axisMotor.setManualPower(yValue);
+        } else {
+            y_axisMotor.setManualPower(0);
+        }
     } else {
         x_axisMotor.setManualPower(0);
         y_axisMotor.setManualPower(0);
@@ -171,6 +222,37 @@ void i2cCheck() {
         char c = Wire.read();
         if (c == 'u') {
             lastComCheckTime = millis();
+        }
+    }
+}
+
+void readRotarty(){
+  if (digitalRead(rotatyPinXb)) {
+    possitionX--;
+  } else {
+    possitionX++;
+  }
+}
+
+void callibrateMotor() {
+    if (!isZAxisOut) {
+        if (digitalRead(rInductiveSensor)) {
+            x_axisMotor.setManualPower(128);
+        } else {
+            x_axisMotor.setManualPower(0);
+            possitionX = 0;
+        }
+        if (!bYSwitch) {
+            y_axisMotor.setManualPower(128);
+        } else {
+            y_axisMotor.setManualPower(0);
+        }
+
+        if (!digitalRead(rInductiveSensor) && bYSwitch)
+        {
+            possitionX = 0;
+            switchToManualState();
+            wireComm.sendData("dcal");
         }
     }
 }
