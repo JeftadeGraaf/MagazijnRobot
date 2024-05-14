@@ -34,6 +34,7 @@ unsigned long resetButtonTimer = 0;
 unsigned long lastComCheckTime = 0;
 
 int possitionX = 0;
+int possitionY = 0;
 
 enum RobotState{
     automatic,
@@ -71,7 +72,7 @@ void loop()
 
     if(wireComm.hasReceivedData()){
         String msg = wireComm.getReceivedData();
-        Serial.println(msg);
+        // Serial.println(msg);
         if(msg == "off"){
             turnOffRobot();
         } else if (msg == "man"){
@@ -87,9 +88,14 @@ void loop()
         } else if(msg == "my1h") {
             tYSwitch = true;
         } else if(msg == "my0l") {
+            Serial.println(msg);
             bYSwitch = false;
         } else if(msg == "my1l") {
+            Serial.println(msg);
             bYSwitch = true;
+        } else if(msg.startsWith("py")) {
+            // Serial.println(msg.substring(2));
+            possitionY = msg.substring(2).toInt();
         }
         wireComm.setHasReceivedData(false);
     }
@@ -162,7 +168,6 @@ void handleManualInput(){
             x_axisMotor.setManualPower(0);
         }
         int yValue = joystick.readYAxis();
-        Serial.println(yValue);
         if((yValue < 0 && !tYSwitch) || (yValue > 0 && !bYSwitch) || yValue == 0){
             y_axisMotor.setManualPower(yValue);
         } else {
@@ -216,6 +221,7 @@ void callibrateMotor() {
             x_axisMotor.setManualPower(128);
         } else {
             x_axisMotor.setManualPower(0);
+            possitionX = 0;
         }
         if (!bYSwitch) {
             y_axisMotor.setManualPower(128);
