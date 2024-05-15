@@ -10,8 +10,6 @@ String JavaSerial::readSerial(){
     String inputString = "";
     if (Serial.available() > 0) {
         inputString = Serial.readString();
-
-        Serial.println(inputString + "\n");
     }
     return inputString;
 };
@@ -19,3 +17,7 @@ String JavaSerial::readSerial(){
 void JavaSerial::writeSerial(String message){
     Serial.println(message);
 };
+
+bool JavaSerial::messageAvailable() {
+    return Serial.available() > 0;
+}
