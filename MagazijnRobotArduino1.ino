@@ -80,8 +80,8 @@ void loop()
         handleRobotState();
     }
 
-    if(millis() - lastPossitionUpdate >= 100 && currentState != callibrating) {
-        // javaSerial.writeSerial("l"+String(possitionX)+","+String(possitionY));
+    if( currentState != callibrating) {
+        javaSerial.writeSerial("l"+String(possitionX)+","+String(possitionY));
         lastPossitionUpdate = millis();
     }
 
@@ -156,6 +156,7 @@ void handleRobotState(){
 void initialiseState(){
     currentState = off;
     wireComm.sendData("off");
+    javaSerial.writeSerial("n");
 }
 
 void turnOffRobot(){
@@ -163,21 +164,25 @@ void turnOffRobot(){
     x_axisMotor.setManualPower(0);
     y_axisMotor.setManualPower(0);
     wireComm.sendData("off");
+    javaSerial.writeSerial("sr");
 }
 
 void switchToManualState(){
     currentState = manual;
     wireComm.sendData("man");
+    javaSerial.writeSerial("so");
 }
 
 void switchToAutomaticState(){
     currentState = automatic;
     wireComm.sendData("aut");
+    javaSerial.writeSerial("sg");
 }
 
 void switchToCallibration(){
     currentState = callibrating;
     wireComm.sendData("cal");
+    javaSerial.writeSerial("sb");
 }
 
 void handleManualInput(){
@@ -225,7 +230,7 @@ void handleAutomaticInput() {
 
         if (possitionY < yPositions[nextY] - 15 && !tYSwitch) {
             y_axisMotor.setManualPower(-255);
-        } else if (possitionY > yPositions[nextY] + 20 && !bYSwitch)
+        } else if (possitionY > yPositions[nextY] + 60 && !bYSwitch)
         {
             y_axisMotor.setManualPower(255);
         } else {
