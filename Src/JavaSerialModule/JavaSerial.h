@@ -9,5 +9,6 @@ public:
     JavaSerial();
     String readSerial();
     void writeSerial(String message);
+    bool messageAvailable();
 };
 #endif
