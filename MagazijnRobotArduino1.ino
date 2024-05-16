@@ -14,8 +14,8 @@ const int lInductiveSensor = 6;
 const int rInductiveSensor = 7;
 bool lInduction = true;
 bool rInduction = true;
-bool tYSwitch = false;
-bool bYSwitch = false;
+bool tYSwitch = true;
+bool bYSwitch = true;
 bool isZAxisOut = true;
 bool callibrate = true;
 String msg = "";
@@ -64,6 +64,8 @@ void setup()
     pinMode(rotatyPinXa, INPUT_PULLUP);
     pinMode(rotatyPinXb, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(rotatyPinXa), readRotarty, RISING);
+    lInduction = digitalRead(lInductiveSensor);
+    rInduction = digitalRead(rInductiveSensor);
     Serial.begin(9600);
     joystick.registerPins();
     x_axisMotor.registerPins();
@@ -74,6 +76,7 @@ void setup()
 
 void loop()
 {
+    Serial.println(tYSwitch);
     if(isEmergencyButtonPressed()){
         turnOffRobot();
     } else {
@@ -81,7 +84,7 @@ void loop()
     }
 
     if( currentState != callibrating) {
-        javaSerial.writeSerial("l"+String(possitionX)+","+String(possitionY));
+        //javaSerial.writeSerial("l"+String(possitionX)+","+String(possitionY));
         lastPossitionUpdate = millis();
     }
 
@@ -140,7 +143,8 @@ void handleRobotState(){
             break;
         case off:
             if(isResetButtonPressed()){
-                switchToCallibration();
+                //switchToCallibration();
+                switchToManualState();
                 lastComCheckTime = millis();
             }
             break;
@@ -200,7 +204,7 @@ void handleManualInput(){
             x_axisMotor.setManualPower(0);
         }
         int yValue = joystick.readYAxis();
-        if((yValue < 0 && !tYSwitch) || (yValue > 0 && !bYSwitch) || yValue == 0){
+        if((yValue < 0 && tYSwitch) || (yValue > 0 && bYSwitch) || yValue == 0){
             y_axisMotor.setManualPower(yValue);
         } else {
             y_axisMotor.setManualPower(0);
