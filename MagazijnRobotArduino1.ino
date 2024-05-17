@@ -76,7 +76,6 @@ void setup()
 
 void loop()
 {
-    Serial.println(tYSwitch);
     if(isEmergencyButtonPressed()){
         turnOffRobot();
     } else {
@@ -107,10 +106,10 @@ void loop()
         } else if(msg == "my1h") {
             tYSwitch = true;
         } else if(msg == "my0l") {
-            // Serial.println(msg);
+            Serial.println(msg);
             bYSwitch = false;
         } else if(msg == "my1l") {
-            // Serial.println(msg);
+            Serial.println(msg);
             bYSwitch = true;
         } else if(msg.startsWith("py")) {
             // Serial.println(msg.substring(2));
@@ -143,8 +142,8 @@ void handleRobotState(){
             break;
         case off:
             if(isResetButtonPressed()){
-                //switchToCallibration();
-                switchToManualState();
+                switchToCallibration();
+                // switchToManualState();
                 lastComCheckTime = millis();
             }
             break;
@@ -232,9 +231,9 @@ void handleAutomaticInput() {
             x_axisMotor.setManualPower(0);
         }
 
-        if (possitionY < yPositions[nextY] - 15 && !tYSwitch) {
+        if (possitionY < yPositions[nextY] - 15 && tYSwitch) {
             y_axisMotor.setManualPower(-255);
-        } else if (possitionY > yPositions[nextY] + 60 && !bYSwitch)
+        } else if (possitionY > yPositions[nextY] + 60 && bYSwitch)
         {
             y_axisMotor.setManualPower(255);
         } else {
@@ -287,13 +286,13 @@ void callibrateMotor() {
             x_axisMotor.setManualPower(0);
             possitionX = 0;
         }
-        if (!bYSwitch) {
+        if (bYSwitch) {
             y_axisMotor.setManualPower(128);
         } else {
             y_axisMotor.setManualPower(0);
         }
 
-        if (!digitalRead(rInductiveSensor) && bYSwitch)
+        if (!digitalRead(rInductiveSensor) && !bYSwitch)
         {
             possitionX = 0;
             switchToManualState();
