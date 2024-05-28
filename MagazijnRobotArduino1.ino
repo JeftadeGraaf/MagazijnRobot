@@ -37,7 +37,7 @@ bool xOnPosition = false;
 bool yOnPosition = false;
 
 const int xPositions[6] = {0, 1580, 2295, 3000, 3690, 4395};
-const int yPositions[6] = {0, 60, 560, 1060, 1560, 2060};
+const int yPositions[6] = {0, 80, 580, 1080, 1580, 2080};
 const int zPositions[3] = {900, 720, 500};
 
 #define debounceTime 200
@@ -49,7 +49,7 @@ unsigned long yAxisBrakingTime = 0;
 volatile int positionX = 0;
 int positionY = 0;
 int positionYPickup = 0;
-#define allowedYMovementUp 80
+#define allowedYMovementUp 95
 #define allowedYMovementDown -70
 
 int coordinates[3][2];
