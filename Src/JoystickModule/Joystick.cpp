@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Joystick.h"
 
+const int manualSpeed = 200;
 
 Joystick::Joystick(int xPin, int yPin, int deadzone){
     this -> xPin = xPin;
@@ -18,9 +19,10 @@ int Joystick::readXAxis(){
     if(xValue >= 127 - this -> deadzone && xValue <= 127 + this-> deadzone){
         return 0;
     } else if(xValue < 127){
-        xValue = (127 - xValue) * -1;
+        // xValue = (127 - xValue) * -1;
+        xValue = map(xValue, 127, 0, 0, -manualSpeed);
     } else {
-        xValue = map(xValue, 127, 255, 0, 127);
+        xValue = map(xValue, 127, 255, 0, manualSpeed);
     }
     return xValue * -1;
 }
@@ -30,9 +32,10 @@ int Joystick::readYAxis(){
     if(yValue >= 127 - this -> deadzone && yValue <= 127 + this-> deadzone){
         return 0;
     } else if(yValue < 127){
-        yValue = (127 - yValue) * -1;
+        // yValue = (127 - yValue) * -1;
+        yValue = map(yValue, 127, 0, 0, -manualSpeed);
     } else {
-        yValue = map(yValue, 127, 255, 0, 127);
+        yValue = map(yValue, 127, 255, 0, manualSpeed);
     }
     return yValue;
 }
