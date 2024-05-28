@@ -10,8 +10,8 @@
 #define secondArduinoAddress 9
 #define rotaryPinXa 2
 #define rotaryPinXb 5
-const int lInductiveSensor = 6;
-const int rInductiveSensor = 7;
+#define lInductiveSensor 6
+#define rInductiveSensor 7
 bool lInduction = true;
 bool rInduction = true;
 bool tYSwitch = true;
@@ -36,21 +36,21 @@ bool zPositionSent = false;
 bool xOnPosition = false;
 bool yOnPosition = false;
 
-const int xPositions[6] = {0, 1570, 2295, 3000, 3690, 4395};
+const int xPositions[6] = {0, 1580, 2295, 3000, 3690, 4395};
 const int yPositions[6] = {0, 60, 560, 1060, 1560, 2060};
 const int zPositions[3] = {900, 720, 500};
 
-int debounceTime = 200;
+#define debounceTime 200
 unsigned long resetButtonTimer = 0;
 unsigned long lastComCheckTime = 0;
 unsigned long lastPositionUpdate = 0;
 unsigned long yAxisBrakingTime = 0;
 
-int positionX = 0;
+volatile int positionX = 0;
 int positionY = 0;
 int positionYPickup = 0;
-int allowedYMovementUp = 80;
-int allowedYMovementDown = -70;
+#define allowedYMovementUp 80
+#define allowedYMovementDown -70
 
 int coordinates[3][2];
 int nextX = 0;
@@ -69,6 +69,8 @@ RobotState currentState;
 
 void setup()
 {
+    // TCCR2B = TCCR2B & B11111000 | B00000111;  // for PWM frequency of 30.64 Hz
+
     pinMode(emergencyButtonPin, INPUT_PULLUP);
     pinMode(resetButtonPin, INPUT_PULLUP);
     pinMode(lInductiveSensor, INPUT);
@@ -78,7 +80,7 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(rotaryPinXa), readRotarty, RISING);
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
-    Serial.begin(9600);
+    Serial.begin(115200);
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();
@@ -93,16 +95,21 @@ void loop()
     } else {
         handleRobotState();
     }
+    if (millis() - lastComCheckTime >= 200 && millis() - lastComCheckTime <= 1300) {
+        Wire.requestFrom(9, 1);
+        i2cCheck();
+    } else if (millis() - lastComCheckTime > 1300 ) {
+        turnOffRobot();
+    }    
 
-    if(millis() % 2 && currentState != callibrating) {
-        // javaSerial.writeSerial("l"+String(positionX)+","+String(positionY));
+    if(millis() - lastPositionUpdate >= 75  && currentState != callibrating) {
+        javaSerial.writeSerial("l"+String(positionX)+","+String(positionY));
         lastPositionUpdate = millis();
     }
 
 
     if(wireComm.hasReceivedData()){
         String msg = wireComm.getReceivedData();
-        // Serial.println(msg);
         if(msg == "off"){
             turnOffRobot();
         } else if (msg == "man"){
@@ -110,11 +117,10 @@ void loop()
         } else if (msg == "aut"){
             switchToAutomaticState();
         } else if (msg == "mz0"){
-            // Serial.println(msg);
             isZAxisOut = false;
             if (currentState == automatic && yOnPosition && xOnPosition)
             {
-                javaSerial.writeSerial("p" + String(nextX) + "." + String(nextY));
+                javaSerial.writeSerial("p" + String(nextX) + "," + String(nextY));
                 if (item < 2)
                 {
                     item++;
@@ -123,6 +129,7 @@ void loop()
                 } else {
                     nextX = 0;
                     nextY = 0;
+                    javaSerial.writeSerial("oc");
                 }
                 xOnPosition = false;
                 yOnPosition = false;
@@ -137,26 +144,17 @@ void loop()
         } else if(msg == "my1h") {
             tYSwitch = true;
         } else if(msg == "my0l") {
-            // Serial.println(msg);
             bYSwitch = false;
         } else if(msg == "my1l") {
-            // Serial.println(msg);
             bYSwitch = true; 
         } else if(msg == "yu") {
             moveYUp = true;
-            Serial.println("yu");
         } else if(msg.startsWith("py")) {
-            // Serial.println(msg.substring(2));
             positionY = msg.substring(2).toInt();
         }
         wireComm.setHasReceivedData(false);
     }
-    if (millis() - lastComCheckTime >= 200 && millis() - lastComCheckTime <= 1300) {
-        Wire.requestFrom(9, 1);
-        i2cCheck();
-    } else if (millis() - lastComCheckTime > 1300 ) {
-        turnOffRobot();
-    }
+    
     checkSerial();
 }
 
@@ -177,7 +175,6 @@ void handleRobotState(){
         case off:
             if(isResetButtonPressed()){
                 switchToCallibration();
-                // switchToManualState();
                 lastComCheckTime = millis();
             }
             break;
@@ -193,15 +190,17 @@ void handleRobotState(){
 void initialiseState(){
     currentState = off;
     wireComm.sendData("off");
-    javaSerial.writeSerial("n");
+    javaSerial.writeSerial("sr");
 }
 
 void turnOffRobot(){
-    currentState = off;
-    x_axisMotor.setManualPower(0);
-    y_axisMotor.setManualPower(0);
-    wireComm.sendData("off");
-    javaSerial.writeSerial("sr");
+    if (currentState != off) {
+        currentState = off;
+        x_axisMotor.setManualPower(0);
+        y_axisMotor.setManualPower(0);
+        wireComm.sendData("off");
+        javaSerial.writeSerial("sr");
+    }
 }
 
 void switchToManualState(){
@@ -240,10 +239,25 @@ void handleManualInput(){
             x_axisMotor.setManualPower(0);
         }
         int yValue = joystick.readYAxis();
-        if((yValue < 0 && tYSwitch) || (yValue > 0 && bYSwitch) || yValue == 0){
+        if((yValue < 0 && tYSwitch)){
             y_axisMotor.setManualPower(yValue);
+        } else if (yValue > 0 && bYSwitch) {
+            y_axisMotor.setManualPower(yValue);
+            yAxisBraking = true;
+            yAxisBrakingTime = millis();
         } else {
-            y_axisMotor.setManualPower(0);
+            if (yAxisBraking)
+            {
+                y_axisMotor.setManualPower(-255);
+                if (millis() - yAxisBrakingTime > 40)
+                {
+                    yAxisBraking = false;
+                    y_axisMotor.setManualPower(0);
+                }
+                
+            } else {
+                y_axisMotor.setManualPower(0);
+            }
         }
     } else {
         int yValue = joystick.readYAxis();
@@ -285,13 +299,11 @@ void handleAutomaticMode() {
 
         if (moveYUp && nextY != 0)
         {
-            Serial.println("moveYUp");
             y_axisMotor.setManualPower(-255);
             if (positionY - positionYPickup > allowedYMovementUp) {
                 moveYUp = false;
                 y_axisMotor.setManualPower(0);
                 wireComm.sendData("z0");
-                Serial.println("z0");
             }
             
         } else {
@@ -300,14 +312,13 @@ void handleAutomaticMode() {
         if (!zPositionSent && (nextX != 0 && nextY != 0))
         {
             wireComm.sendData("z" + String(zPositions[item]));
-            Serial.println("z" + String(zPositions[item]));
             zPositionSent = true;
         }
         
     } else if (!isZAxisOut) {
         if ((positionX < xPositions[nextX] - 5 && lInduction) && nextX != 0) {
             x_axisMotor.setManualPower(-255);
-        } else if ((positionX > xPositions[nextX] + 3 && rInduction) && nextX != 0) {
+        } else if ((positionX > xPositions[nextX] + 10 && rInduction) && nextX != 0) {
             x_axisMotor.setManualPower(255);
         } else if (nextX == 0 && rInduction){
             x_axisMotor.setManualPower(255);
@@ -318,13 +329,27 @@ void handleAutomaticMode() {
 
         if ((positionY < yPositions[nextY] - 10 && tYSwitch) && nextY != 0) {
             y_axisMotor.setManualPower(-255);
-        } else if ((positionY > yPositions[nextY] + 20 && bYSwitch) && nextY != 0) {
+        } else if ((positionY > yPositions[nextY] + 5 && bYSwitch) && nextY != 0) {
             y_axisMotor.setManualPower(255);
+            yAxisBraking = true;
+            yAxisBrakingTime = millis();
         } else if (nextY == 0 && bYSwitch) {
             y_axisMotor.setManualPower(255);
         } else {
-            yOnPosition = true;
-            y_axisMotor.setManualPower(0);
+            if (yAxisBraking)
+            {
+                y_axisMotor.setManualPower(-255);
+                if (millis() - yAxisBrakingTime > 40)
+                {
+                    yAxisBraking = false;
+                    y_axisMotor.setManualPower(0);
+                    yOnPosition = true;
+                }
+                
+            } else {
+                y_axisMotor.setManualPower(0);
+                yOnPosition = true;
+            }
         }
     } else {
         x_axisMotor.setManualPower(0);
@@ -372,13 +397,13 @@ void readRotarty(){
 void callibrateMotor() {
     if (!isZAxisOut) {
         if (digitalRead(rInductiveSensor)) {
-            x_axisMotor.setManualPower(128);
+            x_axisMotor.setManualPower(255);
         } else {
             x_axisMotor.setManualPower(0);
             positionX = 0;
         }
         if (bYSwitch) {
-            y_axisMotor.setManualPower(128);
+            y_axisMotor.setManualPower(255);
         } else {
             y_axisMotor.setManualPower(0);
         }
@@ -405,15 +430,15 @@ void checkSerial()
 
             String coordinate = "";
             int coordinateNumber = 0;
-            coordinates[0][0] = msg[1] - '0';
-            coordinates[0][1] = msg[3] - '0';
-            coordinates[1][0] = msg[5] - '0';
-            coordinates[1][1] = msg[7] - '0';
-            coordinates[2][0] = msg[9] - '0';
-            coordinates[2][1] = msg[11] - '0';
+            coordinates[0][0] = msg[5] - '0';
+            coordinates[0][1] = msg[7] - '0';
+            coordinates[1][0] = msg[9] - '0';
+            coordinates[1][1] = msg[11] - '0';
+            coordinates[2][0] = msg[13] - '0';
+            coordinates[2][1] = msg[15] - '0';
 
-            nextX = msg[1] - '0';
-            nextY = msg[3] - '0';
+            nextX = msg[5] - '0';
+            nextY = msg[7] - '0';
             lastComCheckTime = millis();
             xOnPosition = false;
             yOnPosition = false;
@@ -421,9 +446,5 @@ void checkSerial()
             javaSerial.writeSerial("bo");
             wireComm.sendData("sr");
         }
-        // lastComCheckTime = millis();
-        // if (currentState == automatic) {
-        //     switchToAutomaticState();
-        // }
     }
 }
