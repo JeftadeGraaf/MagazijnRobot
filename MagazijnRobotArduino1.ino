@@ -46,8 +46,8 @@ unsigned long lastComCheckTime = 0;
 unsigned long lastPositionUpdate = 0;
 unsigned long yAxisBrakingTime = 0;
 
-int positionX = 0;
-int positionY = 0;
+volatile int positionX = 0;
+volatile int positionY = 0;
 int positionYPickup = 0;
 int allowedYMovementUp = 80;
 int allowedYMovementDown = -70;
@@ -78,7 +78,7 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(rotaryPinXa), readRotarty, RISING);
     lInduction = digitalRead(lInductiveSensor);
     rInduction = digitalRead(rInductiveSensor);
-    Serial.begin(9600);
+    Serial.begin(115200);
     joystick.registerPins();
     x_axisMotor.registerPins();
     y_axisMotor.registerPins();
@@ -94,8 +94,8 @@ void loop()
         handleRobotState();
     }
 
-    if(millis() % 2 && currentState != callibrating) {
-        // javaSerial.writeSerial("l"+String(positionX)+","+String(positionY));
+    if(millis() - lastPositionUpdate >= 75  && currentState != callibrating) {
+        javaSerial.writeSerial("l"+String(positionX)+","+String(positionY));
         lastPositionUpdate = millis();
     }
 
@@ -193,7 +193,7 @@ void handleRobotState(){
 void initialiseState(){
     currentState = off;
     wireComm.sendData("off");
-    javaSerial.writeSerial("n");
+    javaSerial.writeSerial("sr");
 }
 
 void turnOffRobot(){
@@ -405,15 +405,15 @@ void checkSerial()
 
             String coordinate = "";
             int coordinateNumber = 0;
-            coordinates[0][0] = msg[1] - '0';
-            coordinates[0][1] = msg[3] - '0';
-            coordinates[1][0] = msg[5] - '0';
-            coordinates[1][1] = msg[7] - '0';
-            coordinates[2][0] = msg[9] - '0';
-            coordinates[2][1] = msg[11] - '0';
+            coordinates[0][0] = msg[5] - '0';
+            coordinates[0][1] = msg[7] - '0';
+            coordinates[1][0] = msg[9] - '0';
+            coordinates[1][1] = msg[11] - '0';
+            coordinates[2][0] = msg[13] - '0';
+            coordinates[2][1] = msg[15] - '0';
 
-            nextX = msg[1] - '0';
-            nextY = msg[3] - '0';
+            nextX = msg[5] - '0';
+            nextY = msg[7] - '0';
             lastComCheckTime = millis();
             xOnPosition = false;
             yOnPosition = false;
@@ -421,9 +421,5 @@ void checkSerial()
             javaSerial.writeSerial("bo");
             wireComm.sendData("sr");
         }
-        // lastComCheckTime = millis();
-        // if (currentState == automatic) {
-        //     switchToAutomaticState();
-        // }
     }
 }
