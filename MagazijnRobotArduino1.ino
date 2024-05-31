@@ -114,7 +114,7 @@ void loop()
             isZAxisOut = false;
             if (currentState == automatic && yOnPosition && xOnPosition)
             {
-                javaSerial.writeSerial("p" + String(nextX) + "." + String(nextY));
+                javaSerial.writeSerial("p" + String(nextX) + "," + String(nextY));
                 if (item < 2)
                 {
                     item++;
